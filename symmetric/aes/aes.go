@@ -3,6 +3,7 @@ package aes
 import (
 	"crypto/internal/utils"
 	"encoding/binary"
+	"fmt"
 )
 
 
@@ -92,8 +93,18 @@ func (a *AES) keyExpansion()([]uint32){
 	return w;
 }
 
-func (a *AES) EncryptCBC(in []byte, iv []byte){
-	
+func (a *AES) EncryptCBC(in []byte, iv []byte)[]byte{
+
+	ivTmp := make([]byte, len(iv));
+	copy(ivTmp,iv)
+	for i := 0; i < len(in); i+= a.len{
+		xor(in[i:i+a.len],ivTmp)
+		a.encryptBlock(in[i:i+a.len],a.roundkeys)
+		copy(ivTmp,in[i:i+a.len])
+	}
+	fmt.Printf("aes_impl-%d CBC encrypted cipher:",a.nk*32)
+	utils.Dumpbytes("",in)
+	return in
 }
 
 func (a *AES) DecryptCBC(in []byte, iv []byte){
@@ -101,7 +112,11 @@ func (a *AES) DecryptCBC(in []byte, iv []byte){
 }
 
 func (a *AES) addRoundkey(state []byte,w []uint32){
-
+	tmp := make([]byte,a.len);
+	for i := 0; i < len(w); i++{
+		binary.BigEndian.PutUint32(tmp[4*i:4*i+4],w[i])
+	}
+	xor(state,tmp)
 }
 
 func (a *AES) subBytes(state []byte){
@@ -128,13 +143,6 @@ func (a *AES) shiftRows(state []byte){
 func (a *AES) invshiftRows(state []byte){
 }
 
-func (a *AES) mixCols(state []byte){
-
-}
-
-func (a *AES) invmixCols(state []byte){
-
-}
 
 func rootword(in []byte){
 	in[0],in[1],in[2],in[3] = in[1],in[2],in[3],in[4]
@@ -147,16 +155,60 @@ func xor(m []byte,n []byte){
 	}
 }
 
+func xtime(in byte) byte{
+	return (in << 1) ^ (((in >> 7) & 1) * 0x1b)
+}
+
+func xtimes(in byte, t int)(byte){
+	for t > 0 {
+		in  = xtime(in)
+		t--;
+	}
+	return in;
+}
+
+func mulByte(x byte,y byte)byte{
+	return (((y >> 0) & 0x01)*xtimes(x,0)^
+	((y >> 1) & 0x01)*xtimes(x,1)^
+	((y >> 2) & 0x01)*xtimes(x,2)^
+	((y >> 3) & 0x01)*xtimes(x,3)^
+	((y >> 4) & 0x01)*xtimes(x,4)^
+	((y >> 5) & 0x01)*xtimes(x,5)^
+	((y >> 6) & 0x01)*xtimes(x,6)^
+	((y >> 7) & 0x01)*xtimes(x,7)) 
+}
+
+func mulWord(x []byte,y []byte){
+	tmp := make([]byte,4);
+	copy(tmp,x);
+	x[0] = mulByte(tmp[0],y[3])^mulByte(tmp[1],y[0])^mulByte(tmp[2],y[1])^mulByte(tmp[2],y[2])
+	x[1] = mulByte(tmp[0],y[2])^mulByte(tmp[1],y[3])^mulByte(tmp[2],y[0])^mulByte(tmp[2],y[1])
+	x[2] = mulByte(tmp[0],y[1])^mulByte(tmp[1],y[2])^mulByte(tmp[2],y[3])^mulByte(tmp[2],y[0])
+	x[3] = mulByte(tmp[0],y[0])^mulByte(tmp[1],y[1])^mulByte(tmp[2],y[2])^mulByte(tmp[2],y[3])
+}
+
+
+func (a *AES) mixCols(state []byte){
+	s := []byte{0x03,0x01,0x01,0x02}
+	for i := 0; i < len(state);i+=4{
+		mulWord(state[i:i+4],s)
+	}
+}
+
+func (a *AES) invmixCols(state []byte){
+
+}
+
 func (a *AES) encryptBlock(state []byte,roundKeys []uint32){
 	a.addRoundkey(state,roundKeys[0:4]);
 	for round := 1; round < a.nr; round++{
 		a.subBytes(state)
-		a.shiftRow(state)
+		a.shiftRows(state)
 		a.mixCols(state)
 		a.addRoundkey(state,roundKeys[4*round:4*round+4])
 	}
 	a.subBytes(state)
-	a.shiftRow(state)
+	a.shiftRows(state)
 	a.addRoundkey(state,roundKeys[a.nr*4:a.nr*4+4])
 }
 

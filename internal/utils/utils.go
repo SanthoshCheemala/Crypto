@@ -25,3 +25,19 @@ func DumpWords(note string,in []uint32){
 	}
 	fmt.Println("\n")
 }
+
+func Dumpbytes(note string,in []byte){
+	fmt.Printf("%s",note)
+	for i,v := range in{
+		if i%16 == 0{
+			fmt.Printf("\nblock[%d]: %02x",i/16,v)
+		} else {
+			if i%4 == 0{
+				fmt.Printf(" %02x",v)
+			} else {
+				fmt.Printf("%02x",v)
+			}
+		}
+	}
+	fmt.Println("\n")
+}
