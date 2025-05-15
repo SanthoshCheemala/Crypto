@@ -1,5 +1,10 @@
 package aes
 
+import (
+	"crypto/internal/utils"
+	"encoding/binary"
+)
+
 
 type AES struct{
 	nr int
@@ -61,13 +66,30 @@ func newAes(key []byte)(*AES,error){
 		len: 16,
 		key: key,
 	}
-	aes.roundkeys = keyExpansion(aes.key)
+	aes.roundkeys = aes.keyExpansion()
 	return &aes,nil;
 }
 
-func keyExpansion(key []byte)([]uint32){
-	var roundKeys []uint32;
-
+func (a *AES) keyExpansion()([]uint32){
+	var w []uint32;
+	for i := 0; i < a.nk; i++{
+		w = append(w, binary.BigEndian.Uint32(a.key[4*i:4*i+4]))
+	}
+	for r := a.nk; r <= a.nb*(a.nr+1); r++{
+		tmpW := make([]byte,4);
+		binary.BigEndian.PutUint32(tmpW,w[r-1])
+		if r%a.nk == 0{
+			rootword(tmpW);
+			a.subBytes(tmpW);
+			tempRcon := make([] byte,4);
+			binary.BigEndian.PutUint32(tempRcon,rcon[r/a.nk-1])
+			xor(tmpW,tempRcon)
+		}
+		w = append(w, w[r-a.nk]^binary.BigEndian.Uint32(tmpW))
+	}
+	// mute debugging
+	utils.DumpWords("KeyExpansion: ", w);
+	return w;
 }
 
 func (a *AES) EncryptCBC(in []byte, iv []byte){
@@ -79,7 +101,7 @@ func (a *AES) DecryptCBC(in []byte, iv []byte){
 }
 
 func (a *AES) addRoundkey(state []byte,w []uint32){
-	 
+
 }
 
 func (a *AES) subBytes(state []byte){
@@ -104,7 +126,6 @@ func (a *AES) shiftRows(state []byte){
 	a.shiftRow(state,3,3)
 }
 func (a *AES) invshiftRows(state []byte){
-
 }
 
 func (a *AES) mixCols(state []byte){
