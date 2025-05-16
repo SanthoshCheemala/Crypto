@@ -94,8 +94,8 @@ func (a *AES) keyExpansion()([]uint32){
 	return w;
 }
 
-func (a *AES) EncryptCBC(in []byte, iv []byte)[]byte{
-
+func (a *AES) EncryptCBC(in []byte, iv []byte,pad utils.PaddingFunc)[]byte{
+	in = pad(in,a.len)
 	ivTmp := make([]byte, len(iv));
 	copy(ivTmp,iv)
 	for i := 0; i < len(in); i+= a.len{
@@ -169,14 +169,14 @@ func xtimes(in byte, t int)(byte){
 }
 
 func mulByte(x byte,y byte)byte{
-	return (((y >> 0) & 0x01)*xtimes(x,0)^
-	((y >> 1) & 0x01)*xtimes(x,1)^
-	((y >> 2) & 0x01)*xtimes(x,2)^
-	((y >> 3) & 0x01)*xtimes(x,3)^
-	((y >> 4) & 0x01)*xtimes(x,4)^
-	((y >> 5) & 0x01)*xtimes(x,5)^
-	((y >> 6) & 0x01)*xtimes(x,6)^
-	((y >> 7) & 0x01)*xtimes(x,7)) 
+	return (((y >> 0) & 0x01)*xtimes(x,0))^
+	(((y >> 1) & 0x01)*xtimes(x,1))^
+	(((y >> 2) & 0x01)*xtimes(x,2))^
+	(((y >> 3) & 0x01)*xtimes(x,3))^
+	(((y >> 4) & 0x01)*xtimes(x,4))^
+	(((y >> 5) & 0x01)*xtimes(x,5))^
+	(((y >> 6) & 0x01)*xtimes(x,6))^
+	(((y >> 7) & 0x01)*xtimes(x,7))
 }
 
 func mulWord(x []byte,y []byte){
