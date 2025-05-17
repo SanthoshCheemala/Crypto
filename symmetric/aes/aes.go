@@ -57,34 +57,45 @@ var rcon = [10]uint32{
 	0x20000000, 0x40000000, 0x80000000, 0x1b000000, 0x36000000,
 }
 
-
+// newAes initializes a new AES encryption/decryption context with the provided key
+// It sets up the block cipher with appropriate parameters based on the key length
+// and generates the round keys needed for encryption and decryption operations
 func newAes(key []byte)(*AES,error){
 	aes := AES{
-		nr:10,
-		nk:4,
-		nb:4,
-		len: 16,
-		key: key,
+		nr:10,            // Number of rounds (10 for AES-128)
+		nk:4,             // Key length in 32-bit words (4 words = 16 bytes = 128 bits)
+		nb:4,             // Block size in 32-bit words (always 4 words = 16 bytes = 128 bits)
+		len: 16,          // Block length in bytes
+		key: key,         // Store the original encryption key
 	}
-	aes.roundkeys = aes.keyExpansion()
+	aes.roundkeys = aes.keyExpansion()  // Generate round keys for the cipher
 	return &aes,nil;
 }
 
+// keyExpansion generates the round keys used in each round of encryption/decryption
+// It expands the original encryption key into a larger key schedule
 func (a *AES) keyExpansion()([]uint32){
 	var w []uint32;
+	// First, copy the original key into the round key array
 	for i := 0; i < a.nk; i++{
 		w = append(w, binary.BigEndian.Uint32(a.key[4*i:4*i+4]))
 	}
+	// Expand the key to generate remaining round keys
 	for r := a.nk; r < a.nb*(a.nr+1); r++{
 		tmpW := make([]byte,4);
 		binary.BigEndian.PutUint32(tmpW,w[r-1])
+		
+		// Apply special transformations at specific intervals
 		if r%a.nk == 0{
-			rootword(tmpW);
-			a.subBytes(tmpW);
+			rootword(tmpW);              // Rotate word (byte rotation)
+			a.subBytes(tmpW);            // Apply S-box substitution
 			tempRcon := make([] byte,4);
-			binary.BigEndian.PutUint32(tempRcon,rcon[r/a.nk-1])
-			xor(tmpW,tempRcon)
+			binary.BigEndian.PutUint32(tempRcon,rcon[r/a.nk-1])  // Add round constant
+			xor(tmpW,tempRcon)           // XOR with round constant
 		}
+		
+		// Each new round key word is the XOR of the previous round key word
+		// and the word a.nk positions earlier
 		w = append(w, w[r-a.nk]^binary.BigEndian.Uint32(tmpW))
 	}
 	// mute debugging
@@ -92,6 +103,7 @@ func (a *AES) keyExpansion()([]uint32){
 	return w;
 }
 
+// EncryptCBC encrypts data using AES in CBC mode with provided initialization vector
 func (a *AES) EncryptCBC(in []byte, iv []byte,pad utils.PaddingFunc)[]byte{
 	in = pad(in,a.len)
 	ivTmp := make([]byte, len(iv));
@@ -106,6 +118,7 @@ func (a *AES) EncryptCBC(in []byte, iv []byte,pad utils.PaddingFunc)[]byte{
 	return in
 }
 
+// DecryptCBC decrypts data using AES in CBC mode with provided initialization vector
 func (a *AES) DecryptCBC(in []byte, iv []byte,unpad utils.UnpaddingFunc)([]byte){
 	ivTmp := make([]byte,len(iv));
 	copy(ivTmp,iv)
@@ -125,6 +138,7 @@ func (a *AES) DecryptCBC(in []byte, iv []byte,unpad utils.UnpaddingFunc)([]byte)
 	return in;
 }
 
+// addRoundkey XORs the state with the round key
 func (a *AES) addRoundkey(state []byte,w []uint32){
 	tmp := make([]byte,a.len);
 	for i := 0; i < len(w); i++{
@@ -133,23 +147,27 @@ func (a *AES) addRoundkey(state []byte,w []uint32){
 	xor(state,tmp)
 }
 
+// subBytes substitutes each byte in the state with its corresponding value in the S-box
 func (a *AES) subBytes(state []byte){
 	for i,v := range state{
 		state[i] = sbox[v];
 	}
 }
 
+// invsubBytes reverses the subBytes operation using inverse S-box
 func (a *AES) invsubBytes(state []byte){
 	for i,v := range state{
 		state[i] = inv_sbox[v]
 	}
 }
 
+// shiftRow shifts a row by n positions
 func (a* AES) shiftRow(in []byte,i int,n int){
 	in[i],in[i+4*1],in[i+4*2],in[i+4*3] = in[i+4*(n%4)],in[i+4*((n+1)%4)],in[i+4*((n+2)%4)],in[i+4*((n+3)%4)]
 }
 
 
+// shiftRows performs the ShiftRows step of AES encryption
 func (a *AES) shiftRows(state []byte){
 	a.shiftRow(state,1,1)
 	a.shiftRow(state,2,2)
@@ -157,6 +175,7 @@ func (a *AES) shiftRows(state []byte){
 }
 
 
+// invshiftRows reverses the shiftRows operation for decryption
 func (a *AES) invshiftRows(state []byte){
 	a.shiftRow(state,1,3)
 	a.shiftRow(state,2,2)
@@ -164,6 +183,7 @@ func (a *AES) invshiftRows(state []byte){
 }
 
 
+// rootword rotates a 4-byte word left by one byte
 func rootword(in []byte){
 	in[0],in[1],in[2],in[3] = in[1],in[2],in[3],in[0]
 }
@@ -222,6 +242,7 @@ func (a *AES) invmixCols(state []byte){
 	}
 }
 
+// encryptBlock encrypts a single block of plaintext
 func (a *AES) encryptBlock(state []byte,roundKeys []uint32){
 	a.addRoundkey(state,roundKeys[0:4]);
 	for round := 1; round < a.nr; round++{
@@ -235,6 +256,7 @@ func (a *AES) encryptBlock(state []byte,roundKeys []uint32){
 	a.addRoundkey(state,roundKeys[a.nr*4:a.nr*4+4])
 }
 
+// DecryptBlock decrypts a single block of ciphertext
 func (a *AES) DecryptBlock(state []byte,roundKeys []uint32){
 	a.addRoundkey(state,roundKeys[a.nr*4:a.nr*4+4])
 	a.invsubBytes(state)
