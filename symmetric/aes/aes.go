@@ -5,8 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 )
-
-
 type AES struct{
 	nr int
 	nk int 
@@ -108,8 +106,23 @@ func (a *AES) EncryptCBC(in []byte, iv []byte,pad utils.PaddingFunc)[]byte{
 	return in
 }
 
-func (a *AES) DecryptCBC(in []byte, iv []byte){
-
+func (a *AES) DecryptCBC(in []byte, iv []byte,unpad utils.UnpaddingFunc)([]byte){
+	ivTmp := make([]byte,len(iv));
+	copy(ivTmp,iv)
+	reg := make([]byte,a.len);
+	for i := 0; i < len(in); i += a.len{
+		if i+a.len > len(in) {
+            break
+        }
+        
+		copy(reg,in[i:i+a.len])
+		xor(in[i:i+a.len],ivTmp)
+		a.DecryptBlock(in[i:i+a.len],a.roundkeys)
+		copy(ivTmp,reg);
+	}
+	fmt.Printf("aes_impl-%d CBC decrypted cipher:",a.nk*32)
+	utils.Dumpbytes("",in)
+	return in;
 }
 
 func (a *AES) addRoundkey(state []byte,w []uint32){
@@ -126,22 +139,28 @@ func (a *AES) subBytes(state []byte){
 	}
 }
 
-func (a* AES) shiftRow(in []byte,i int,n int){
-	in[i],in[i+4*1],in[i+4*2],in[i+4*3] = in[i+4*(n%4)],in[i+4*((n+1)%4)],in[i+4*((n+2)%4)],in[i+4*((n+3)%4)]
-}
-
 func (a *AES) invsubBytes(state []byte){
 	for i,v := range state{
 		state[i] = inv_sbox[v]
 	}
 }
 
+func (a* AES) shiftRow(in []byte,i int,n int){
+	in[i],in[i+4*1],in[i+4*2],in[i+4*3] = in[i+4*(n%4)],in[i+4*((n+1)%4)],in[i+4*((n+2)%4)],in[i+4*((n+3)%4)]
+}
+
+
 func (a *AES) shiftRows(state []byte){
 	a.shiftRow(state,1,1)
 	a.shiftRow(state,2,2)
 	a.shiftRow(state,3,3)
 }
+
+
 func (a *AES) invshiftRows(state []byte){
+	a.shiftRow(state,1,3)
+	a.shiftRow(state,2,2)
+	a.shiftRow(state,3,1)
 }
 
 
@@ -197,7 +216,10 @@ func (a *AES) mixCols(state []byte){
 }
 
 func (a *AES) invmixCols(state []byte){
-
+	s := []byte{0x0b,0x0d,0x09,0x0e}
+	for i := 0; i < len(state); i+=4{
+		mulWord(state[i:i+4],s)
+	}
 }
 
 func (a *AES) encryptBlock(state []byte,roundKeys []uint32){
@@ -214,5 +236,14 @@ func (a *AES) encryptBlock(state []byte,roundKeys []uint32){
 }
 
 func (a *AES) DecryptBlock(state []byte,roundKeys []uint32){
-
+	a.addRoundkey(state,roundKeys[a.nr*4:a.nr*4+4])
+	a.invsubBytes(state)
+	a.invshiftRows(state)
+	for round := a.nr-1; round > 0; round--{
+		a.invmixCols(state)
+		a.addRoundkey(state,roundKeys[4*round:4*round+4])
+		a.invsubBytes(state)
+		a.invshiftRows(state)
+	}
+	a.addRoundkey(state,roundKeys[0:4]);
 }
