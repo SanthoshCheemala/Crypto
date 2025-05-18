@@ -4,6 +4,8 @@ import (
 	"crypto/internal/utils"
 	"encoding/binary"
 	"fmt"
+	"math"
+	"math/big"
 )
 type AES struct{
 	nr int
@@ -138,6 +140,73 @@ func (a *AES) DecryptCBC(in []byte, iv []byte,unpad utils.UnpaddingFunc)([]byte)
 	return in;
 }
 
+func gHash(x []byte,H []byte)([]byte){
+	y := make([]byte,16)
+
+	for i := 0; i < len(x); i+= 16{
+		xor(y,x[i:i+16]);
+		mulBlock(y,H)
+	}
+	return y;
+}
+
+func (a *AES) EncryptGCTR(in []byte,ICB []byte)([]byte){
+	if in == nil {
+		return in
+	}
+
+	plainTmp := make([]byte, len(in))
+	copy(plainTmp, in)
+	xorBlock := make([]byte, 16*int(math.Ceil(float64(len(plainTmp))/16.0)))
+
+	// The variable cbi(i 'th counter block) is used to preserve the state.
+	cbi := make([]byte, 16)
+	cbi1 := make([]byte, 16)
+	copy(cbi, ICB)
+	copy(cbi1, ICB)
+	for i := 0; i < len(plainTmp); i += a.len {
+		a.encryptBlock(cbi1, a.roundkeys)
+		copy(xorBlock[i:i+a.len], cbi1)
+		cbi = inc32(cbi)
+		copy(cbi1, cbi)
+	}
+
+	xor(plainTmp, xorBlock)
+	return plainTmp
+}
+
+func (a *AES) EncryptGCM(in []byte,iv []byte,auth []byte, tagLen int)([]byte,[]byte){
+	H := make([]byte,16)
+	a.encryptBlock(H,a.roundkeys)
+	var J0 []byte
+	if len(iv) == 12{
+		J0 = append(iv, []byte{0x00,0x00,0x00,0x01}...)
+	} else {
+		sPlus64Zeros := make([]byte,16*int(math.Ceil(float64(8*len(iv))/128.0))-len(iv)+8)
+		lenIV := make([]byte,0)
+		big.NewInt(int64(8 * len(iv))).FillBytes(lenIV)
+		J0 = gHash(append(append(iv, sPlus64Zeros...),lenIV...),H)
+
+	}
+	J0Temp := make([]byte,len(J0))
+	copy(J0Temp,J0)
+
+	cipher := a.EncryptGCTR(in,inc32(J0))
+	vZeros := make([]byte, 16*int(math.Ceil(float64(8*len(auth))/128.0))-len(auth)+8)
+	uZeros := make([]byte, 16*int(math.Ceil(float64(8*len(cipher))/128.0))-len(cipher)+8)
+
+	lenA := make([]byte,8)
+	lenC := make([]byte,8)
+	big.NewInt(int64(8 * len(auth))).FillBytes(lenA)
+	big.NewInt(int64(8 * len(cipher))).FillBytes(lenC)
+	S := gHash(append(append(append(append(append(auth,vZeros...),cipher...),uZeros...),lenA...),lenC...),H)
+	T := a.EncryptGCTR(S,J0Temp)
+	fmt.Printf("aes-impl-%d GCM Encrypted cipherText",a.nk*32)
+	utils.Dumpbytes("",cipher)
+	utils.Dumpbytes("Tag",T[:tagLen])
+	return cipher,T[:tagLen]
+}
+
 // addRoundkey XORs the state with the round key
 func (a *AES) addRoundkey(state []byte,w []uint32){
 	tmp := make([]byte,a.len);
@@ -268,4 +337,31 @@ func (a *AES) DecryptBlock(state []byte,roundKeys []uint32){
 		a.invshiftRows(state)
 	}
 	a.addRoundkey(state,roundKeys[0:4]);
+}
+
+func inc32(X []byte)([] byte){
+	lsb32 := binary.BigEndian.Uint32(X[len(X)-4:]) + 1
+	binary.BigEndian.PutUint32(X[len(X)-4:],lsb32)
+	return X
+}
+
+func mulBlock(x []byte,y []byte){
+	tmp := big.NewInt(0).SetBytes([]byte{0xe1})
+
+	R := tmp.Lsh(tmp,120);
+	X := big.NewInt(0).SetBytes(x)
+	Z := big.NewInt(0)
+	V := big.NewInt(0).SetBytes(y)
+
+	for i := 0; i < 128; i++{
+		if X.Bit(127-i) == 1{
+			Z.Xor(Z,V)
+		} 
+		if V.Bit(0) == 0{
+			V.Rsh(V,1)
+		} else {
+			V.Xor(V.Rsh(V,1),R)
+		}
+	}
+	Z.FillBytes(x)
 }
