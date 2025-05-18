@@ -1,11 +1,22 @@
 package utils
 
 import (
+	"encoding/hex"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"strings"
 )
+
+
+type PaddingFunc func([]byte,int)([]byte)
+
+type UnpaddingFunc func([]byte)([]byte)
+
+func MustDecodeHex(s string) []byte{
+	b,err := hex.DecodeString(s)
+	if err != nil{
+		panic(err)
+	}
+	return b;
+}
 
 func GCD(i, b int) int {
 	if b == 0 {
@@ -23,7 +34,7 @@ func DumpWords(note string,in []uint32){
 			fmt.Printf("\n %.8x",v)
 		}
 	}
-	fmt.Println("\n")
+	fmt.Printf("\n")
 }
 
 func Dumpbytes(note string,in []byte){
@@ -39,5 +50,23 @@ func Dumpbytes(note string,in []byte){
 			}
 		}
 	}
-	fmt.Println("\n")
+	fmt.Printf("\n")
+}
+
+
+func PKCS7Padding(in []byte,blockLen int)([] byte){
+	tmp := make([]byte,len(in));
+	copy(tmp,in);
+	rmd := len(in) % blockLen;
+	for i := 0; i < blockLen-rmd; i++{
+		tmp = append(tmp, byte(blockLen-rmd))
+	}
+	return tmp
+}
+
+func PKCS7UnPadding(in []byte)([] byte){
+	last := int(in[len(in)-1])
+	tmp := make([]byte,len(in)-last);
+	copy(tmp,in[:len(in)-last])
+	return tmp;
 }

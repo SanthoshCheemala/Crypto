@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"reflect"
 )
 type AES struct{
 	nr int
@@ -183,7 +184,7 @@ func (a *AES) EncryptGCM(in []byte,iv []byte,auth []byte, tagLen int)([]byte,[]b
 		J0 = append(iv, []byte{0x00,0x00,0x00,0x01}...)
 	} else {
 		sPlus64Zeros := make([]byte,16*int(math.Ceil(float64(8*len(iv))/128.0))-len(iv)+8)
-		lenIV := make([]byte,0)
+		lenIV := make([]byte,8)
 		big.NewInt(int64(8 * len(iv))).FillBytes(lenIV)
 		J0 = gHash(append(append(iv, sPlus64Zeros...),lenIV...),H)
 
@@ -205,6 +206,46 @@ func (a *AES) EncryptGCM(in []byte,iv []byte,auth []byte, tagLen int)([]byte,[]b
 	utils.Dumpbytes("",cipher)
 	utils.Dumpbytes("Tag",T[:tagLen])
 	return cipher,T[:tagLen]
+}
+
+func (a *AES) DecryptGCM(in []byte,iv []byte, auth []byte,tag []byte)([]byte){
+	H := make([]byte,16)
+	a.encryptBlock(H,a.roundkeys)
+	var J0 []byte
+	if len(iv) == 12{
+		J0 = append(iv, []byte{0x00,0x00,0x00,0x01}...)
+	} else {
+		sPlus64Zeros := make([]byte,16*int(math.Ceil(float64(8*len(iv))/128.0))-len(iv)+8)
+		lenIV := make([]byte,8)
+		big.NewInt(int64(8 * len(iv))).FillBytes(lenIV)
+		J0 = gHash(append(append(iv, sPlus64Zeros...),lenIV...),H)
+
+	}
+	J0Temp := make([]byte,len(J0))
+	copy(J0Temp,J0)
+
+	cipherText := make([]byte,len(in))
+	copy(cipherText,in)
+	plainText := a.EncryptGCTR(in,inc32(J0))
+
+	vZeros := make([]byte, 16*int(math.Ceil(float64(8*len(auth))/128.0))-len(auth)+8)
+	uZeros := make([]byte, 16*int(math.Ceil(float64(8*len(plainText))/128.0))-len(plainText)+8)
+
+	lenA := make([]byte,8)
+	lenC := make([]byte,8)
+
+	big.NewInt(int64(8 * len(auth))).FillBytes(lenA)
+	big.NewInt(int64(8 * len(plainText))).FillBytes(lenC)
+	S := gHash(append(append(append(append(append(auth,vZeros...),cipherText...),uZeros...),lenA...),lenC...),H)
+	T := a.EncryptGCTR(S,J0Temp)
+	fmt.Printf("aes-impl-%d GCM Decrypted plainText",a.nk*32)
+	if reflect.DeepEqual(T[:len(tag)],tag){
+		utils.Dumpbytes("",plainText)
+		return plainText
+	}
+
+	utils.Dumpbytes("\nFailed!",nil)
+	return nil
 }
 
 // addRoundkey XORs the state with the round key

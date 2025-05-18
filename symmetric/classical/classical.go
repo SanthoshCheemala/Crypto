@@ -1,7 +1,7 @@
-package main
+package classical
 
 import (
-	"crypto/utils"
+	"crypto/internal/utils"
 	"errors"
 	"fmt"
 	"strings"
