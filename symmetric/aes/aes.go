@@ -1,12 +1,13 @@
 package aes
 
 import (
-	"crypto/internal/utils"
 	"encoding/binary"
 	"fmt"
 	"math"
 	"math/big"
 	"reflect"
+
+	"github.com/SanthoshCheemala/Crypto.git/internal/utils"
 )
 type AES struct{
 	nr int
@@ -176,6 +177,15 @@ func (a *AES) EncryptGCTR(in []byte,ICB []byte)([]byte){
 	return plainTmp
 }
 
+// EncryptGCM performs AES encryption in Galois/Counter Mode (GCM)
+// Parameters:
+//   - in: plaintext to encrypt
+//   - iv: initialization vector (nonce)
+//   - auth: additional authenticated data (AAD)
+//   - tagLen: length of authentication tag
+// Returns:
+//   - encrypted ciphertext
+//   - authentication tag
 func (a *AES) EncryptGCM(in []byte,iv []byte,auth []byte, tagLen int)([]byte,[]byte){
 	H := make([]byte,16)
 	a.encryptBlock(H,a.roundkeys)
