@@ -1,4 +1,4 @@
-package ecdh
+package ecdh25519
 
 import (
 	"golang.org/x/crypto/curve25519"
@@ -18,7 +18,7 @@ type PublicKey [keySize]byte
 
 const keySize int = 32
 
-var keySizeError error = errors.New("The data provided was not 32 bytes length. ")
+var KeySizeError error = errors.New("The data provided was not 32 bytes length. ")
 
 func GenerateKey() (*PrivateKey,error){
 	var k [keySize]byte
@@ -48,6 +48,9 @@ func (prv *PrivateKey) Public() *PublicKey{
 }
 
 func (prv *PrivateKey) ComputeSecret(pub *PublicKey) ([]byte,error){
+	if pub == nil{
+		return nil,errors.New("Public Key cannot be nil")
+	}
 	rpub := [keySize]byte(*pub)
 
 	dst,err := curve25519.X25519(prv.rprv[:],rpub[:])
@@ -60,7 +63,7 @@ func (prv *PrivateKey) ComputeSecret(pub *PublicKey) ([]byte,error){
 
 func PrivateFromBytes(raw []byte, preCompute bool) (*PrivateKey,error){
 	if len(raw) != keySize{
-		return nil,keySizeError
+		return nil,KeySizeError
 	}
 
 	var arr [keySize]byte
@@ -77,7 +80,7 @@ func PrivateFromBytes(raw []byte, preCompute bool) (*PrivateKey,error){
 
 func PublicFromBytes(raw []byte)(*PublicKey, error){
 	if len(raw) != keySize{
-		return nil,keySizeError
+		return nil,KeySizeError
 	}
 	var arr[keySize]byte
 	copy(arr[:],raw)

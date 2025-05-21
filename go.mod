@@ -1,4 +1,4 @@
-module github.com/SanthoshCheemala/Crypto.git
+module github.com/SanthoshCheemala/Crypto
 
 go 1.24.1
 
