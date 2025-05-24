@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 )
@@ -69,4 +70,21 @@ func PKCS7UnPadding(in []byte)([] byte){
 	tmp := make([]byte,len(in)-last);
 	copy(tmp,in[:len(in)-last])
 	return tmp;
+}
+
+
+func MDPadding(in []byte)([] byte){
+	messageLenBits := uint64(len(in)) * 8
+
+	padded := append(in, 0x80)
+
+	for len(padded)%64 != 56 {
+		padded = append(padded, 0x00)
+	}
+
+	lenBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(lenBytes, messageLenBits)
+	padded = append(padded, lenBytes...)
+
+	return padded
 }

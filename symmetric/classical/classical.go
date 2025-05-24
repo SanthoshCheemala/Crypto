@@ -1,7 +1,7 @@
 package classical
 
 import (
-	"crypto/internal/utils"
+	"github.com/SanthoshCheemala/Crypto/internal/utils"
 	"errors"
 	"fmt"
 	"strings"
@@ -67,7 +67,7 @@ func Vigenere(inputText string, key string)(string,error){
 	return builder.String(),nil
 }
 
-func one_time_pad(inputText string, key string)(string,error){
+func One_time_pad(inputText string, key string)(string,error){
 	if len(inputText) != len(key){
 		return "",errors.New("key length must be same as message length")
 	}
