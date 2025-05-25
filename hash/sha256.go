@@ -1,7 +1,9 @@
 package hash
 
 import (
+	"encoding/binary"
 	"fmt"
+
 	"github.com/SanthoshCheemala/Crypto/internal/utils"
 )
 
@@ -39,17 +41,28 @@ func (s *SHA256State) ProcessBlock(block []byte){
 	tmp := make([]byte,len(s.State))
 	copy(tmp,s.State)
 	s.compressFun(block,tmp)
-	s.addBytes(s.State,tmp)
+	s.State = addMod32(s.State,tmp)
 }
 
 
 
-func (s *SHA256State) addBytes(b []byte, tmp []byte) {
-	panic("unimplemented")
+func  addMod32(b []byte, tmp []byte) []byte {
+	if len(b) != len(tmp) || len(b)%4==0{
+		panic("invalid input length")
+	}
+	for i := 0; i < len(b); i += 4{
+		var tmp1 uint32
+		var tmp2 uint32
+		tmp1 = binary.BigEndian.Uint32(b[i:i+4])
+		tmp2 = binary.BigEndian.Uint32(tmp[i:i+4])
+		tmp3 := tmp1 + tmp2
+		binary.BigEndian.PutUint32(b[i:i+4],tmp3)
+	}
+	return b
 }
+
 
 func (s *SHA256State) compressFun(b []byte, tmp []byte) {
 	panic("unimplemented")
 }
-
 
