@@ -82,24 +82,38 @@ func  addMod32(b []byte, tmp []byte) []byte {
 }
 
 
-func compressFun(b []byte, h []byte) []byte {
-	tmp := make([]uint32,len(h)*8/32)
+func compressFun(block []byte, hash []byte) []byte {
+	tmp := make([]uint32,8)
 	w := make([]uint32,64)
 	for i := 0; i < 8; i++{
-		tmp[i] = binary.BigEndian.Uint32(h[i*4:i*4+4])
+		tmp[i] = binary.BigEndian.Uint32(hash[i*4:i*4+4])
 	}
 	for i := 0; i < 16; i ++{
-		w[i] = binary.BigEndian.Uint32(b[i*4:i*4+4])
-		tmp = roundFunc(w[i],tmp,k[i])	
+		w[i] = binary.BigEndian.Uint32(block[i*4:i*4+4])
 	}
 	for i := 16; i < len(w); i++{
 		w[i] = w[i-16] + sigma0(w[i-15]) + w[i-7] + sigma1(w[i-2])
-		tmp = roundFunc(w[i],tmp,k[i])
 	}
+    a, b, c, d, e, f, g, h := tmp[0], tmp[1], tmp[2], tmp[3], tmp[4], tmp[5], tmp[6], tmp[7]
+	for i := 0; i < 64;i++{
+		a, b, c, d, e, f, g, h = roundFunc(w[i],[8]uint32{a, b, c, d, e, f, g, h},k[i])
+	}
+	tmp[0] += a
+    tmp[1] += b
+    tmp[2] += c
+    tmp[3] += d
+    tmp[4] += e
+    tmp[5] += f
+    tmp[6] += g
+    tmp[7] += h
 	for i := 0; i < 8; i++{
-		binary.BigEndian.PutUint32(h[i*4:i*4+4],tmp[i])
+		binary.BigEndian.PutUint32(hash[i*4:i*4+4],tmp[i])
 	}
-	return h
+	return hash
+}
+
+func roundFunc(u1 uint32, u2 [8]uint32, u3 uint32) (uint32, uint32, uint32, uint32, uint32, uint32, uint32, uint32) {
+	panic("unimplemented")
 }
 
 func sigma1(u uint32) uint32 {
@@ -107,10 +121,6 @@ func sigma1(u uint32) uint32 {
 }
 
 func sigma0(u uint32) uint32 {
-	panic("unimplemented")
-}
-
-func roundFunc(u1 uint32, tmp []uint32, u2 uint32) []uint32 {
 	panic("unimplemented")
 }
 
