@@ -1,15 +1,14 @@
 package hash
 
 import (
-	"bytes"
 	"encoding/binary"
-	"fmt"
+	"encoding/hex"
 
 	"github.com/SanthoshCheemala/Crypto/internal/utils"
 )
 
 type SHA256State struct{
-	State []byte
+	State []uint32
 }
 var k = [64]uint32{
 	0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
@@ -31,97 +30,108 @@ var k = [64]uint32{
 }
 
 
-func NewSHA256State() *SHA256State{
-
-	iv := []byte{
-		0x6a, 0x09, 0xe6, 0x67, 0xbb, 0x67, 0xae, 0x85,
-        0x3c, 0x6e, 0xf3, 0x72, 0xa5, 0x4f, 0xf5, 0x3a,
-        0x51, 0x0e, 0x52, 0x7f, 0x9b, 0x05, 0x68, 0x8c,
-        0x1f, 0x83, 0xd9, 0xab, 0x5b, 0xe0, 0xcd, 0x19,
-	}
-	return &SHA256State{
-		State: iv,
-	}
+func NewSHA256State() *SHA256State {
+    return &SHA256State{
+        State: []uint32{
+            0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+            0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
+        },
+    }
 }
 
-func Sha256(msg string, iv []byte) *SHA256State{
+func (s *SHA256State) Sha256(msg string) *SHA256State{
 	in := []byte(msg)
-	fmt.Println(in)
 	paddedMessage := utils.MDPadding(in)
-	state := &SHA256State{
-		State: make([]byte, len(iv)),
-	}
-	copy(state.State,iv)
 	for i := 0; i < len(paddedMessage); i += 64{
-		state.ProcessBlock(paddedMessage[i:i+64])
+		s.ProcessBlock(paddedMessage[i:i+64])
 	}
-	return state
+	return s
 }
+
 func (s *SHA256State) ProcessBlock(block []byte){
-	tmp := make([]byte,len(s.State))
-	copy(tmp,s.State)
-	s.State = compressFun(block,tmp)
-	s.State = addMod32(s.State,tmp)
+	currentStateCopy := make([]uint32,len(s.State))
+	copy(currentStateCopy,s.State)
+	newHash := compressFun(block, currentStateCopy)
+	for i := 0; i < 8; i++ {
+		s.State[i] = newHash[i]
+	}
 }
 
-
-
-func  addMod32(b []byte, tmp []byte) []byte {
-	if len(b) != len(tmp) || len(b)%4==0{
-		panic("invalid input length")
-	}
-	for i := 0; i < len(b); i += 4{
-		var tmp1 uint32
-		var tmp2 uint32
-		tmp1 = binary.BigEndian.Uint32(b[i:i+4])
-		tmp2 = binary.BigEndian.Uint32(tmp[i:i+4])
-		tmp3 := tmp1 + tmp2
-		binary.BigEndian.PutUint32(b[i:i+4],tmp3)
-	}
-	return b
-}
-
-
-func compressFun(block []byte, hash []byte) []byte {
-	tmp := make([]uint32,8)
+func compressFun(block []byte, hash []uint32) []uint32 {
 	w := make([]uint32,64)
-	for i := 0; i < 8; i++{
-		tmp[i] = binary.BigEndian.Uint32(hash[i*4:i*4+4])
-	}
+
 	for i := 0; i < 16; i ++{
 		w[i] = binary.BigEndian.Uint32(block[i*4:i*4+4])
 	}
+
 	for i := 16; i < len(w); i++{
 		w[i] = w[i-16] + sigma0(w[i-15]) + w[i-7] + sigma1(w[i-2])
 	}
-    a, b, c, d, e, f, g, h := tmp[0], tmp[1], tmp[2], tmp[3], tmp[4], tmp[5], tmp[6], tmp[7]
+
+    a, b, c, d, e, f, g, h := hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7]
+
 	for i := 0; i < 64;i++{
-		a, b, c, d, e, f, g, h = roundFunc(w[i],[8]uint32{a, b, c, d, e, f, g, h},k[i])
+		t1 := h + w[i] + k[i] + ch(e,f,g) +  Σ1(e)
+		t2 := Ma(a,b,c) + Σ0(a)
+		h = g
+		g = f
+		f = e
+		e = t1 + d
+		d = c
+		c = b
+		b = a
+		a = t1 + t2
 	}
-	tmp[0] += a
-    tmp[1] += b
-    tmp[2] += c
-    tmp[3] += d
-    tmp[4] += e
-    tmp[5] += f
-    tmp[6] += g
-    tmp[7] += h
-	for i := 0; i < 8; i++{
-		binary.BigEndian.PutUint32(hash[i*4:i*4+4],tmp[i])
-	}
+	hash[0] += a
+    hash[1] += b
+    hash[2] += c
+    hash[3] += d
+    hash[4] += e
+    hash[5] += f
+    hash[6] += g
+    hash[7] += h
 	return hash
 }
 
-func roundFunc(u1 uint32, u2 [8]uint32, u3 uint32) (uint32, uint32, uint32, uint32, uint32, uint32, uint32, uint32) {
-	panic("unimplemented")
+func (s *SHA256State) Sum() string{
+	result := make([]byte,len(s.State)*4)
+	for i := 0; i < len(s.State); i ++{
+		binary.BigEndian.PutUint32(result[i*4:i*4+4],s.State[i])
+	}
+	return hex.EncodeToString(result)
 }
 
-func sigma1(u uint32) uint32 {
-	panic("unimplemented")
+
+
+func Σ1(e uint32) uint32 {
+	return ROTR(e,6) ^ ROTR(e,11) ^ ROTR(e,25)
+}
+
+func Σ0(a uint32) uint32 {
+		return ROTR(a,2) ^ ROTR(a,13) ^ ROTR(a,22)
+}
+
+func Ma(a, b, c uint32) uint32 {
+	return (a & b) ^ (a & c) ^ (b & c)
+}
+
+func ch(e, f, g uint32) uint32 {
+	return (e & f) ^ ((^e) & g)
 }
 
 func sigma0(u uint32) uint32 {
-	panic("unimplemented")
+	return ROTR(u,7) ^ ROTR(u,18) ^ SHR(u,3)
+}
+func sigma1(u uint32) uint32 {
+	return ROTR(u,17) ^ ROTR(u,19) ^ SHR(u,10)
 }
 
+
+func SHR(u uint32, i int) uint32 {
+	return u>>i
+}
+
+func ROTR(u uint32, i int) uint32 {
+	return (u >> i) | (u << (32 - i))
+}
 

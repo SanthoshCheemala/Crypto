@@ -8,6 +8,8 @@ import (
 
 
 func main(){
-	val := hash.Sha256("Hello this is colombia ksldnfjsbfijpwbf wijefbweijbfijwebfiwe fweij fbiwjebf wejinfwienfpiwe fweifpwieufpiuwef weijfniwefnpweif wejifpwiefpiwefpwifwjkvnsdkjnvjiv wijennfjiwnfpwienfpwef weifewifnpewfip f ejfiewifepwfnejkfnewjfnkdnwe[uofnwepifjbnkwjefnef jewnfpweijnfpiwenfw]")
-	fmt.Println("\n\n",val)
+	s := hash.NewSHA256State()
+	s.Sha256("2")
+	fmt.Println(s.State)
+	fmt.Println(s.Sum())
 }
