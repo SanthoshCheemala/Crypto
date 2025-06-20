@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/SanthoshCheemala/Crypto.git/internal/utils"
+	"github.com/SanthoshCheemala/Crypto/internal/utils"
 )
 type AES struct{
 	nr int
@@ -64,7 +64,7 @@ var rcon = [10]uint32{
 // newAes initializes a new AES encryption/decryption context with the provided key
 // It sets up the block cipher with appropriate parameters based on the key length
 // and generates the round keys needed for encryption and decryption operations
-func newAes(key []byte)(*AES,error){
+func NewAes(key []byte)(*AES,error){
 	aes := AES{
 		nr:10,            // Number of rounds (10 for AES-128)
 		nk:4,             // Key length in 32-bit words (4 words = 16 bytes = 128 bits)

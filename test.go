@@ -9,7 +9,9 @@ import (
 
 func main(){
 	s := hash.NewSHA256State()
-	s.Sha256("2")
+	in := []byte("2")
+	s.Sha256(in)
+	s.Sha256(in)
 	fmt.Println(s.State)
 	fmt.Println(s.Sum())
 }

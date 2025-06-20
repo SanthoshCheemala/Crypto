@@ -2,13 +2,14 @@ package signature
 
 import (
 	"crypto"
-	"crypto/internal/entropy"
+	"crypto/cipher"
+	"crypto/aes"
 	"encoding/asn1"
+	"encoding/binary"
 	"io"
 	"math/big"
 
 	"github.com/SanthoshCheemala/Crypto/hash"
-	"github.com/SanthoshCheemala/Crypto/symmetric/aes"
 	"github.com/glycerine/fast-elliptic-curve-p256/elliptic"
 )
 
@@ -106,7 +107,7 @@ func fermentInverse(k, N *big.Int) *big.Int{
 	return new(big.Int).Exp(k,nMinus2,N)
 }
 
-func Sign(rand io.Reader, priv *PrivateKey,hash []byte) (r,s *big.Int,err error){
+func Sign(rand io.Reader, priv *PrivateKey,has []byte) (r,s *big.Int,err error){
 	entropyLen := (priv.Curve.Params().BitSize+7)/16
 
 	if entropyLen > 32 {
@@ -120,8 +121,119 @@ func Sign(rand io.Reader, priv *PrivateKey,hash []byte) (r,s *big.Int,err error)
 	}
 
 	md := hash.NewSHA256State()
+	md.Sha256(priv.D.Bytes())
+	md.Sha256(entropy)
+	md.Sha256(has)
+	key := make([]byte,len(md.State)*4)
+	for i := 0; i < len(md.State); i ++{
+		binary.BigEndian.PutUint32(key[i*4:i*4+4],md.State[i])
+	}
+
+	block, err := aes.NewCipher(key)
+
+	if err != nil{
+		return nil,nil,err
+	}
+
+	csprng := cipher.StreamReader{
+		R : zeroReader,
+		S : cipher.NewCTR(block,[]byte(aesIV)),
+	}
+	c := priv.PublicKey.Curve
+	N := c.Params().N
+
+	var k, KInv *big.Int
+
+	for {
+		for {
+			k , err = randFeildElement(c,csprng)
+			if err != nil{
+				r = nil
+				return nil, nil, err
+			}
+			if an, ok := priv.Curve.(invertible); ok {
+				KInv = an.Inverse(k)
+			} else {
+				KInv = fermentInverse(k,N)
+			}
+			r , _ = priv.Curve.ScalarBaseMult(k.Bytes())
+
+			r.Mod(r, N)
+
+			if r.Sign() != 0{
+				break
+			}
+
+		}
+		e := hashToInt(has,c)
+		s := new(big.Int).Mul(priv.D,r)
+		s.Add(s, e)
+		s.Mul(s, KInv)
+		s.Mod(s,N)
+		if s.Sign() != 0{
+			break
+		}
+	}
+	return
 }
 
+func verify(pub *PublicKey,hash []byte,r, s *big.Int) bool{
+	c := pub.Curve
+	N := c.Params().N
+
+	if r.Sign() == 0 || s.Sign() == 0 {
+		return false
+	}
+
+	if r.Cmp(N) >= 0 || s.Cmp(N) >= 0 {
+		return false
+	}  
+
+	e := hashToInt(hash,c)
+
+	var w *big.Int
+	if in,ok := c.(invertible); ok {
+		w = in.Inverse(s)
+	} else {
+		w = new(big.Int).ModInverse(s,N)
+	}
+	u1 := e.Mul(e,w)
+	u1.Mod(u1,N)
+	u2 := w.Mul(s,w)
+	u2.Mod(u2,N)
+
+	var x,y *big.Int
+
+	if opt,ok := c.(combinedMult); ok {
+		x,y = opt.combinedMult(pub.X,pub.Y,u1.Bytes(),u2.Bytes())
+	} else {
+		x1,y1 := c.ScalarBaseMult(u1.Bytes()) 
+		x2,y2 := c.ScalarBaseMult(u2.Bytes())
+
+		x,y = c.Add(x1,y1,x2,y2)
+	}
+
+	if x.Sign() == 0 && y.Sign() == 0{
+		return false
+	}
+
+	x.Mod(x,N)
+	return x.Cmp(r) == 0
+}
+
+type zr struct {
+	io.Reader
+}
+
+func (z *zr) Read(dst []byte) (n int, err error){
+	for i := range dst{
+		dst[i] = 0
+	}
+	return len(dst),nil
+}
+
+
+var zeroReader = &zr{}
 
 
 

@@ -33,7 +33,7 @@ func TestKeyExpansion(t *testing.T){
 
 	}
 	for _,tuple := range keyExpansionTests{
-		a, err := newAes(tuple.key);
+		a, err := NewAes(tuple.key);
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -81,7 +81,7 @@ func TestCBC(t *testing.T){
 			0x7d, 0x2b, 0xf2, 0x96, 0x2c, 0x55, 0x10, 0x43,
 		}		
 	)
-	a,err := newAes(key)
+	a,err := NewAes(key)
 	if err != nil{
 		t.Fatal(err)
 	}
@@ -135,7 +135,7 @@ func TestGCM(t *testing.T){
 			0xfd,
 		}
 	)
-	a,err := newAes(key)
+	a,err := NewAes(key)
 	if err != nil{
 		t.Fatal(err)
 	}

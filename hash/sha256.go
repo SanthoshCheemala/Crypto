@@ -40,7 +40,7 @@ func NewSHA256State() *SHA256State {
     }
 }
 
-func (s *SHA256State) Sha256(msg string) *SHA256State{
+func (s *SHA256State) Sha256(msg []byte) *SHA256State{
 	in := []byte(msg)
 	paddedMessage := utils.MDPadding(in)
 	for i := 0; i < len(paddedMessage); i += 64{
