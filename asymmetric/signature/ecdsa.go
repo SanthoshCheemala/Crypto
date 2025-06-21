@@ -2,8 +2,8 @@ package signature
 
 import (
 	"crypto"
-	"crypto/cipher"
 	"crypto/aes"
+	"crypto/cipher"
 	"encoding/asn1"
 	"encoding/binary"
 	"io"
@@ -23,7 +23,7 @@ type combinedMult interface{
 }
 
 const (
-	aesIV = "something new to aes gcm block"
+	aesIV = "IV for ECDSA CTR"
 )
 
 type PublicKey struct{
@@ -66,7 +66,7 @@ func randFeildElement(c elliptic.Curve, rand io.Reader) (k *big.Int,err error){
 		return 
 	}
 
-	k = new(big.Int).SetInt64(1)
+	k = new(big.Int).SetBytes(b)
 	n := new(big.Int).Sub(params.N,one)
 	k.Mod(k,n)
 	k.Add(k,one)
@@ -131,6 +131,7 @@ func Sign(rand io.Reader, priv *PrivateKey,has []byte) (r,s *big.Int,err error){
 
 	block, err := aes.NewCipher(key)
 
+
 	if err != nil{
 		return nil,nil,err
 	}
@@ -147,6 +148,7 @@ func Sign(rand io.Reader, priv *PrivateKey,has []byte) (r,s *big.Int,err error){
 	for {
 		for {
 			k , err = randFeildElement(c,csprng)
+			
 			if err != nil{
 				r = nil
 				return nil, nil, err
@@ -163,10 +165,10 @@ func Sign(rand io.Reader, priv *PrivateKey,has []byte) (r,s *big.Int,err error){
 			if r.Sign() != 0{
 				break
 			}
-
+	
 		}
 		e := hashToInt(has,c)
-		s := new(big.Int).Mul(priv.D,r)
+		s = new(big.Int).Mul(priv.D,r)
 		s.Add(s, e)
 		s.Mul(s, KInv)
 		s.Mod(s,N)
@@ -174,13 +176,12 @@ func Sign(rand io.Reader, priv *PrivateKey,has []byte) (r,s *big.Int,err error){
 			break
 		}
 	}
-	return
+	return r, s, nil
 }
 
-func verify(pub *PublicKey,hash []byte,r, s *big.Int) bool{
+func Verify(pub *PublicKey,hash []byte,r, s *big.Int) bool{
 	c := pub.Curve
 	N := c.Params().N
-
 	if r.Sign() == 0 || s.Sign() == 0 {
 		return false
 	}
@@ -199,7 +200,7 @@ func verify(pub *PublicKey,hash []byte,r, s *big.Int) bool{
 	}
 	u1 := e.Mul(e,w)
 	u1.Mod(u1,N)
-	u2 := w.Mul(s,w)
+	u2 := w.Mul(r,w)
 	u2.Mod(u2,N)
 
 	var x,y *big.Int
