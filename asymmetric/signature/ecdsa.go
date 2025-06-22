@@ -209,7 +209,7 @@ func Verify(pub *PublicKey,hash []byte,r, s *big.Int) bool{
 		x,y = opt.combinedMult(pub.X,pub.Y,u1.Bytes(),u2.Bytes())
 	} else {
 		x1,y1 := c.ScalarBaseMult(u1.Bytes()) 
-		x2,y2 := c.ScalarBaseMult(u2.Bytes())
+		x2,y2 := c.ScalarMult(pub.X,pub.Y,u2.Bytes())
 
 		x,y = c.Add(x1,y1,x2,y2)
 	}
