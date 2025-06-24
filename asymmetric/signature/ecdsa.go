@@ -5,7 +5,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/asn1"
-	"encoding/binary"
 	"io"
 	"math/big"
 
@@ -124,12 +123,7 @@ func Sign(rand io.Reader, priv *PrivateKey,has []byte) (r,s *big.Int,err error){
 	md.Sha256(priv.D.Bytes())
 	md.Sha256(entropy)
 	md.Sha256(has)
-	key := make([]byte,len(md.State)*4)
-	for i := 0; i < len(md.State); i ++{
-		binary.BigEndian.PutUint32(key[i*4:i*4+4],md.State[i])
-	}
-
-	block, err := aes.NewCipher(key)
+	block, err := aes.NewCipher(md.Sum())
 
 
 	if err != nil{

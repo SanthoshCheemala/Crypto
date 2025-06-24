@@ -1,6 +1,7 @@
 package hash
 
 import (
+	"encoding/hex"
 	"reflect"
 	"testing"
 )
@@ -13,8 +14,8 @@ func TestSha256(t *testing.T){
 	)
 
 	h := NewSHA256State()
-	h.Sha256(msg)
-	if  !reflect.DeepEqual(h.Sum(),hexhashmsg){
+	h.Sha256([]byte(msg))
+	if !reflect.DeepEqual(hex.EncodeToString(h.Sum()),hexhashmsg){
 		t.Fatalf("hashing failed")
 	}
 }

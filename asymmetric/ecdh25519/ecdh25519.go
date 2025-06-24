@@ -29,7 +29,7 @@ func GenerateKey() (*PrivateKey,error){
 	}
 	k[0] &= 248
 	k[31] &= 127
-	k[31] &= 64
+	k[31] |= 64
 	
 	return &PrivateKey{k,nil,false},nil
 }

@@ -2,7 +2,6 @@ package hash
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 
 	"github.com/SanthoshCheemala/Crypto/internal/utils"
 )
@@ -94,12 +93,12 @@ func compressFun(block []byte, hash []uint32) []uint32 {
 	return hash
 }
 
-func (s *SHA256State) Sum() string{
+func (s *SHA256State) Sum() []byte{
 	result := make([]byte,len(s.State)*4)
 	for i := 0; i < len(s.State); i ++{
 		binary.BigEndian.PutUint32(result[i*4:i*4+4],s.State[i])
 	}
-	return hex.EncodeToString(result)
+	return result
 }
 
 

@@ -9,10 +9,12 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"hash"
+	"io"
 	"math/big"
 	"os"
 	"strings"
 	"testing"
+
 	"github.com/glycerine/fast-elliptic-curve-p256/elliptic"
 )
 
@@ -208,10 +210,19 @@ func TestVectors(t *testing.T) {
 
 	for {
 		line,err := buf.ReadString('\n')
-		
-		if err != nil {
-			t.Fatal(err)
+
+		if len(line) == 0 {
+			if err == io.EOF {
+				break
+			}
+			t.Fatalf("error reading input: %s",err)
 		}
+
+		lineNo++
+		if !strings.HasSuffix(line,"\r\n") {
+			t.Fatalf("bad line ending expected (\\r\\n) on line %d",lineNo)
+		}
+
 		line = line[:len(line)-2]
 		
 		if len(line) == 0 || line[0] == '#' {

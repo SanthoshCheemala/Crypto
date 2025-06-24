@@ -1,7 +1,7 @@
 package aes
 
 import (
-	"github.com/SanthoshCheemala/Crypto.git/internal/utils"
+	"github.com/SanthoshCheemala/Crypto/internal/utils"
 	"reflect"
 	"testing"
 )
