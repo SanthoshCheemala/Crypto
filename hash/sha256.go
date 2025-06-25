@@ -43,12 +43,12 @@ func (s *SHA256State) Sha256(msg []byte) *SHA256State{
 	in := []byte(msg)
 	paddedMessage := utils.MDPadding(in)
 	for i := 0; i < len(paddedMessage); i += 64{
-		s.ProcessBlock(paddedMessage[i:i+64])
+		s.processBlock(paddedMessage[i:i+64])
 	}
 	return s
 }
 
-func (s *SHA256State) ProcessBlock(block []byte){
+func (s *SHA256State) processBlock(block []byte){
 	currentStateCopy := make([]uint32,len(s.State))
 	copy(currentStateCopy,s.State)
 	newHash := compressFun(block, currentStateCopy)

@@ -1,14 +1,15 @@
 package hmac
 
 import (
+	"crypto/hmac"
 	"github.com/SanthoshCheemala/Crypto/hash"
 )
 
-func HMAC(k []byte,msg []byte) []byte{
+func HMAC_Sign(k []byte,msg []byte) []byte{
 	// step 1: Shorten the key if needed
 	if len(k) > 64 {
 		hashedKey := hash.NewSHA256State()
-		hashedKey.ProcessBlock(k)
+		hashedKey.Sha256(k)
 		k = hashedKey.Sum()
 	}
 
@@ -31,10 +32,16 @@ func HMAC(k []byte,msg []byte) []byte{
 
 	// step 4: Inner Hash
 	innerHash := hash.NewSHA256State()
-	innerHash.ProcessBlock(append(k_ipad, msg...))
+	innerHash.Sha256(append(k_ipad, msg...))
 
 	// step 5: Outer Hash
 	outerHash := hash.NewSHA256State()
-	outerHash.ProcessBlock(append(k_opad,innerHash.Sum()...))
+	outerHash.Sha256(append(k_opad,innerHash.Sum()...))
 	return outerHash.Sum()
+}
+
+func HMAC_Verify(k ,msg ,expectedMac []byte) bool {
+	computedMac := HMAC_Sign(k,msg)
+	// fmt.Println(computedMac,expectedMac)
+	return hmac.Equal(computedMac,expectedMac) // to avoid timing attacks
 }
