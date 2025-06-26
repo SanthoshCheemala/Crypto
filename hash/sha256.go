@@ -8,6 +8,7 @@ import (
 
 type SHA256State struct{
 	State []uint32
+	buffer [64]uint32
 }
 
 var k = [64]uint32{
@@ -40,8 +41,7 @@ func NewSHA256State() *SHA256State {
 }
 
 func (s *SHA256State) Sha256(msg []byte) *SHA256State{
-	in := []byte(msg)
-	paddedMessage := utils.MDPadding(in)
+	paddedMessage := utils.MDPadding(msg)
 	for i := 0; i < len(paddedMessage); i += 64{
 		s.processBlock(paddedMessage[i:i+64])
 	}
@@ -49,16 +49,10 @@ func (s *SHA256State) Sha256(msg []byte) *SHA256State{
 }
 
 func (s *SHA256State) processBlock(block []byte){
-	currentStateCopy := make([]uint32,len(s.State))
-	copy(currentStateCopy,s.State)
-	newHash := compressFun(block, currentStateCopy)
-	for i := 0; i < 8; i++ {
-		s.State[i] = newHash[i]
-	}
+	compressFun(block, s.State,s.buffer)
 }
 
-func compressFun(block []byte, hash []uint32) []uint32 {
-	w := make([]uint32,64)
+func compressFun(block []byte, hash []uint32,w [64]uint32) []uint32 {
 
 	for i := 0; i < 16; i ++{
 		w[i] = binary.BigEndian.Uint32(block[i*4:i*4+4])

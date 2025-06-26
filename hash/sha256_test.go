@@ -19,3 +19,12 @@ func TestSha256(t *testing.T){
 		t.Fatalf("hashing failed")
 	}
 }
+
+func BenchmarkSHA256(b *testing.B) {
+	msg := "this is message.Please hash this value"
+
+	for i := 0; i < b.N; i++ {
+		NewSHA256State().Sha256([]byte(msg))
+	}
+	
+}
