@@ -66,7 +66,7 @@ func compressFun(block []byte, hash []uint32,w [64]uint32) []uint32 {
 
 	for i := 0; i < 64;i++{
 		t1 := h + w[i] + k[i] + ch(e,f,g) +  Σ1(e)
-		t2 := Ma(a,b,c) + Σ0(a)
+		t2 := ma(a,b,c) + Σ0(a)
 		h = g
 		g = f
 		f = e
@@ -98,14 +98,14 @@ func (s *SHA256State) Sum() []byte{
 
 
 func Σ1(e uint32) uint32 {
-	return ROTR(e,6) ^ ROTR(e,11) ^ ROTR(e,25)
+	return rOTR(e,6) ^ rOTR(e,11) ^ rOTR(e,25)
 }
 
 func Σ0(a uint32) uint32 {
-		return ROTR(a,2) ^ ROTR(a,13) ^ ROTR(a,22)
+		return rOTR(a,2) ^ rOTR(a,13) ^ rOTR(a,22)
 }
 
-func Ma(a, b, c uint32) uint32 {
+func ma(a, b, c uint32) uint32 {
 	return (a & b) ^ (a & c) ^ (b & c)
 }
 
@@ -114,18 +114,18 @@ func ch(e, f, g uint32) uint32 {
 }
 
 func sigma0(u uint32) uint32 {
-	return ROTR(u,7) ^ ROTR(u,18) ^ SHR(u,3)
+	return rOTR(u,7) ^ rOTR(u,18) ^ sHR(u,3)
 }
 func sigma1(u uint32) uint32 {
-	return ROTR(u,17) ^ ROTR(u,19) ^ SHR(u,10)
+	return rOTR(u,17) ^ rOTR(u,19) ^ rOTR(u,10)
 }
 
 
-func SHR(u uint32, i int) uint32 {
+func sHR(u uint32, i int) uint32 {
 	return u>>i
 }
 
-func ROTR(u uint32, i int) uint32 {
+func rOTR(u uint32, i int) uint32 {
 	return (u >> i) | (u << (32 - i))
 }
 

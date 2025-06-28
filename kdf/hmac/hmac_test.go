@@ -1,8 +1,6 @@
 package hmac
 
 import (
-	// "encoding/hex"
-	// "fmt"
 	"testing"
 )
 
@@ -65,9 +63,9 @@ func TestMalformedKeyAndMessage(t *testing.T) {
 		)
 	
 		computed_mac := HMAC_Sign([]byte(key),[]byte(message))
-		// if HMAC_Verify([]byte("key is secret."),[]byte(message),computed_mac){
-		// 	t.Fatalf("Two signatures should be different for different keys")
-		// }
+		if HMAC_Verify([]byte("key is secret."),[]byte(message),computed_mac){
+			t.Fatalf("Two signatures should be different for different keys")
+		}
 		if HMAC_Verify([]byte(key),[]byte("hello this message is different"),computed_mac) {
 			t.Fatalf("Two signatures should be different for different message")
 		}
