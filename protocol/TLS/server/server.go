@@ -30,7 +30,7 @@ func Server() {
 			log.Println("Error accepting connection: ", err)
 			continue
 		}
-
+		_,err := conn.Write(s)
 		clients[conn] = true
 		go handleConnection(conn, serverInput, clients)
 	}
@@ -55,9 +55,8 @@ func handleConnection(conn net.Conn, serverInput <-chan string, clients map[net.
 		delete(clients, conn)
 		fmt.Printf("Client %s disconnected\n", conn.RemoteAddr())
 	}()
-
+	
 	fmt.Printf("New client connected: %s\n", conn.RemoteAddr())
-
 	go func() {
 		for msg := range serverInput {
 			// Send the message to all clients
