@@ -89,13 +89,13 @@ This project includes a Wireshark packet capture (`pcap/chat_traffic.pcap`) to d
    - Apply the filter `tcp.port == 8080` to focus on the chat application's traffic.
    - Start capturing, send messages, and save as a `.pcap` file (e.g., `chat_traffic.pcap`).
 3. **Load Sample Capture**:
-   - Open `demo/chat_traffic.pcap` in Wireshark.
+   - Open `pcap/chat_traffic.pcap` in Wireshark.
    - Observe encrypted payloads in the TCP stream or custom protocol layer.
 4. **Verify Properties**:
    - **Correctness**: The handshake (ECDH25519) and encrypted messages (AES) are transmitted accurately.
    - **Soundness**: Only parties with valid keys can decrypt messages, as shown by encrypted data in the capture.
 5. **Optional Decryption** (for demonstration only):
-   - Use `demo/decryption_keys.txt` to configure Wireshark (`Edit > Preferences > Protocols > TLS`) to decrypt traffic.
+   - Use `decryption_keys.txt` to configure Wireshark (`Edit > Preferences > Protocols > TLS`) to decrypt traffic.
    - Decrypted TCP stream confirms message integrity.
 
 ### Wireshark Screenshots
@@ -109,7 +109,7 @@ This project includes a Wireshark packet capture (`pcap/chat_traffic.pcap`) to d
 
 ## Demonstration Video
 
-For a detailed walkthrough of the project, including the chat application and Wireshark analysis, watch the demonstration video here: Google Drive Link
+For a detailed walkthrough of the project, including the chat application and Wireshark analysis, watch the demonstration video here: [Google Drive Link](https://drive.google.com/file/d/1C1XWy9uLCFMegUuQlin9wDeiAVPHLK3Z/view?usp=drive_link)
 
 ## Testing and Profiling
 
