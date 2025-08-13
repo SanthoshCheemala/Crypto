@@ -1,10 +1,10 @@
 package ecdh25519
 
 import (
-	"golang.org/x/crypto/curve25519"
 	"crypto/rand"
 	"errors"
 
+	"golang.org/x/crypto/curve25519"
 )
 
 type PrivateKey struct{

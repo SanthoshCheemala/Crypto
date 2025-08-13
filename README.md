@@ -1,356 +1,149 @@
-# Crypto
+# Crypto Lib
 
-A Go implementation of cryptographic algorithms and hash functions.
-
-## Overview
-
-This project provides pure Go implementations of various cryptographic primitives and hash functions. The goal is to provide educational and usable implementations of common cryptographic algorithms for learning and practical purposes.
+This repository contains a custom cryptographic library implemented from scratch in Go, designed to demonstrate the correctness and soundness of various cryptographic algorithms. The library includes implementations of ECDH25519, ECDSA, AES, HKDF, HMAC, and a custom TLS-like protocol. A simple chat application is used as a testbed to showcase the functionality and security of these algorithms, with verification provided through terminal output and Wireshark packet analysis.
 
 ## Features
 
-- Hash functions: SHA-256
-- Symmetric encryption: AES (CBC, GCM modes)
-- Classical ciphers: Caesar, Affine, Vigenere, One-time pad, Columnar
-- Key derivation: HMAC, HKDF
-- Digital signatures: ECDSA
-- Key exchange: Curve25519 ECDH
+- **Custom Cryptographic Algorithms**:
+  - ECDH25519 for secure key exchange.
+  - ECDSA for digital signatures.
+  - AES for symmetric encryption.
+  - HKDF and HMAC for key derivation and authentication.
+- **Custom TLS-like Protocol**: Implements connection, handshake, key scheduling, record layer, and transcript management.
+- **Chat Application Testbed**: Demonstrates the library's usage in a client-server chat environment.
+- **Verification Tools**: Includes terminal logs and Wireshark captures to prove correctness and soundness.
 
-## Installation
+## Project Structure
 
-```bash
-go get github.com/SanthoshCheemala/Crypto
+```
+.
+├── asymmetric/              # Asymmetric cryptography
+│   ├── ecdh25519/          # ECDH25519 key exchange
+│   └── signature/          # ECDSA signatures with test data
+├── hash/                   # SHA256 hash implementation with profiling
+├── internal/utils/         # Utility functions
+├── kdf/                    # Key derivation functions
+│   ├── hkdf/              # HKDF implementation
+│   └── hmac/              # HMAC implementation
+├── protocol/               # Custom protocol implementations
+│   ├── chatapp/           # Chat application (client and server)
+│   └── TLS/               # Custom TLS-like protocol
+├── symmetric/             # Symmetric cryptography
+│   ├── aes/              # AES encryption
+│   └── classical/        # Additional symmetric algorithms
+├── main.go                # Entry point for the chat application
+├── README.md              # Project documentation
 ```
 
-## Usage Examples
+## Prerequisites
 
-### Hash Functions
+- **Go**: Version 1.20 or higher
+- **Wireshark**: For analyzing network traffic
+- **godotenv**: For environment variable management
 
-#### SHA-256
+  ```bash
+  go get github.com/joho/godotenv v1.5.1
+  ```
+- **Terminal**: For running the client and server
+- **Optional**: `bzip2` for extracting signature test data (`SigVer.rsp.bz2`)
 
-```go
-package main
+## Setup and Running the Chat Application
 
-import (
-    "fmt"
-    "encoding/hex"
-    
-    "github.com/SanthoshCheemala/Crypto/hash"
-)
+1. **Clone the Repository**:
 
-func main() {
-    // Create a new SHA-256 state
-    s := hash.NewSHA256State()
-    
-    // Hash some data
-    data := []byte("your data here")
-    s.Sha256(data)
-    
-    // Get the hash value
-    fmt.Printf("Hash: %x\n", s.Sum())
-    
-    // You can continue updating the same hash state
-    moreData := []byte("more data")
-    s.Sha256(moreData)
-    fmt.Printf("Updated hash: %x\n", s.Sum())
-}
-```
+   ```bash
+   git clone https://github.com/yourusername/your-repo.git
+   cd your-repo
+   ```
+2. **Install Dependencies**:
 
-### Symmetric Encryption
+   ```bash
+   go mod tidy
+   ```
+3. **Set Environment Variables**: Configure signing keys in a `.env` file (e.g., `SIGNING_KEY=your_key`).
+4. **Run the Server**:
 
-#### AES-CBC Mode
+   ```bash
+   go run main.go server
+   ```
+5. **Run the Client** (in a separate terminal):
 
-```go
-package main
+   ```bash
+   go run main.go client
+   ```
+6. **Send Messages**: Use the client terminal to send messages, which will be encrypted and logged on both client and server.
 
-import (
-    "fmt"
-    
-    "github.com/SanthoshCheemala/Crypto/symmetric/aes"
-    "github.com/SanthoshCheemala/Crypto/internal/utils"
-)
+### Terminal Output Example
 
-func main() {
-    // Initialize AES with a 128-bit key
-    key := []byte{
-        0x69, 0x61, 0x6D, 0x53, 0x74, 0x61, 0x65, 0x76,
-        0x96, 0xC6, 0xCC, 0x6C, 0x69, 0x6E, 0x67, 0x77,
-    }
-    
-    // Initialization vector for CBC mode
-    iv := []byte{
-        0x50, 0x72, 0x65, 0x6E, 0x74, 0x69, 0x63, 0x65,
-        0x48, 0x61, 0x6C, 0x6C, 0x49, 0x6E, 0x63, 0x2E,
-    }
-    
-    // Create a new AES cipher
-    cipher, err := aes.NewAes(key)
-    if err != nil {
-        panic(err)
-    }
-    
-    // Data to encrypt
-    plaintext := []byte("This is a secret message")
-    
-    // Encrypt with CBC mode
-    ciphertext := cipher.EncryptCBC(plaintext, iv, utils.PKCS7Padding)
-    fmt.Printf("Ciphertext: %x\n", ciphertext)
-    
-    // Decrypt with CBC mode
-    decrypted := cipher.DecryptCBC(ciphertext, iv, utils.PKCS7UnPadding)
-    fmt.Printf("Decrypted: %s\n", decrypted)
-}
-```
+Below is a screenshot of the client-server communication, showing the handshake, secure channel establishment, and encrypted message exchange.
 
-#### AES-GCM Mode
+![Terminal Chat Output](https://drive.google.com/file/d/1oUnwdFqZl3Nk7Fxgb9dtNeWJbOPOV5Su/view?usp=drive_link)## Verifying Correctness and Soundness with Wireshark
 
-```go
-package main
+This project includes a Wireshark packet capture (`demo/chat_traffic.pcap`) to demonstrate the cryptographic algorithms' correctness (accurate data transmission) and soundness (security against unauthorized access).
 
-import (
-    "fmt"
-    
-    "github.com/SanthoshCheemala/Crypto/symmetric/aes"
-)
+### Steps to Analyze
 
-func main() {
-    // Initialize AES with a 128-bit key
-    key := []byte{
-        0x69, 0x61, 0x6D, 0x53, 0x74, 0x61, 0x65, 0x76,
-        0x96, 0xC6, 0xCC, 0x6C, 0x69, 0x6E, 0x67, 0x77,
-    }
-    
-    // Nonce for GCM mode
-    nonce := []byte{
-        0x50, 0x72, 0x65, 0x6E, 0x74, 0x69, 0x63, 0x65,
-        0x48, 0x61, 0x6C, 0x6C,
-    }
-    
-    // Additional authenticated data
-    aad := []byte("Additional data to authenticate")
-    
-    // Create a new AES cipher
-    cipher, err := aes.NewAes(key)
-    if err != nil {
-        panic(err)
-    }
-    
-    // Data to encrypt
-    plaintext := []byte("This is a secret message")
-    
-    // Encrypt with GCM mode
-    ciphertext, tag := cipher.EncryptGCM(plaintext, nonce, aad, 16)
-    fmt.Printf("Ciphertext: %x\n", ciphertext)
-    fmt.Printf("Auth Tag: %x\n", tag)
-    
-    // Decrypt with GCM mode
-    decrypted := cipher.DecryptGCM(ciphertext, nonce, aad, tag)
-    fmt.Printf("Decrypted: %s\n", decrypted)
-}
-```
+1. **Install Wireshark**: Download from wireshark.org.
+2. **Capture Traffic**:
+   - Open Wireshark and select the loopback interface (`lo` on Linux/macOS, `Loopback Adapter` on Windows).
+   - Apply the filter `tcp.port == 8080` to focus on the chat application's traffic.
+   - Start capturing, send messages, and save as a `.pcap` file (e.g., `chat_traffic.pcap`).
+3. **Load Sample Capture**:
+   - Open `demo/chat_traffic.pcap` in Wireshark.
+   - Observe encrypted payloads in the TCP stream or custom protocol layer.
+4. **Verify Properties**:
+   - **Correctness**: The handshake (ECDH25519) and encrypted messages (AES) are transmitted accurately.
+   - **Soundness**: Only parties with valid keys can decrypt messages, as shown by encrypted data in the capture.
+5. **Optional Decryption** (for demonstration only):
+   - Use `demo/decryption_keys.txt` to configure Wireshark (`Edit > Preferences > Protocols > TLS`) to decrypt traffic.
+   - Decrypted TCP stream confirms message integrity.
 
-### Classical Ciphers
+### Wireshark Screenshots
 
-#### Caesar Cipher
+- **Communication Flow**: Displays the TCP handshake and encrypted data exchange.
 
-```go
-package main
+  ![Wireshark Communication Flow](https://drive.google.com/file/d/1WQnKjqjiwCXMGuEehoVifoYBR7LAKUyE/view?usp=drive_link)
+- **TCP Stream Data**: Shows encrypted payloads and (optionally) decrypted messages.
 
-import (
-    "fmt"
-    
-    "github.com/SanthoshCheemala/Crypto/symmetric/classical"
-)
+  ![Wireshark TCP Stream](https://drive.google.com/file/d/1DWbUlX2ylzn5-5OAGzz_UyqaEYZ4r15u/view?usp=drive_link)
 
-func main() {
-    plaintext := "HELLO WORLD"
-    key := 3 // shift by 3 positions
-    
-    // Encrypt
-    ciphertext, err := classical.Caesar(plaintext, key)
-    if err != nil {
-        panic(err)
-    }
-    fmt.Printf("Caesar Encrypted: %s\n", ciphertext)
-    
-    // Decrypt (shift in the opposite direction)
-    decrypted, err := classical.Caesar(ciphertext, -key)
-    if err != nil {
-        panic(err)
-    }
-    fmt.Printf("Caesar Decrypted: %s\n", decrypted)
-}
-```
+## Demonstration Video
 
-#### Vigenere Cipher
+For a detailed walkthrough of the project, including the chat application and Wireshark analysis, watch the demonstration video here: Google Drive Link
 
-```go
-package main
+## Testing and Profiling
 
-import (
-    "fmt"
-    
-    "github.com/SanthoshCheemala/Crypto/symmetric/classical"
-)
+- **Unit Tests**: Run tests for each module:
 
-func main() {
-    plaintext := "HELLO WORLD"
-    key := "KEY"
-    
-    // Encrypt
-    ciphertext, err := classical.Vigenere(plaintext, key)
-    if err != nil {
-        panic(err)
-    }
-    fmt.Printf("Vigenere Encrypted: %s\n", ciphertext)
-    
-    // To decrypt, you would need to implement a separate function or
-    // modify the Vigenere function to support decryption
-}
-```
+  ```bash
+  go test ./asymmetric/ecdh25519
+  go test ./asymmetric/signature
+  go test ./hash
+  go test ./kdf/hkdf
+  go test ./kdf/hmac
+  go test ./symmetric/aes
+  ```
+- **Profiling**: CPU and memory profiles for SHA256 are in `hash/cpu.prof` and `hash/mem.prof`. Analyze with:
 
-### Key Derivation Functions
+  ```bash
+  go tool pprof hash/cpu.prof
+  ```
 
-#### HMAC
+## Security Notes
 
-```go
-package main
+- The `demo/decryption_keys.txt` is for demonstration only and should not be used in production.
+- Ensure secure key management in real-world applications to prevent exposure.
 
-import (
-    "fmt"
-    "encoding/hex"
-    
-    "github.com/SanthoshCheemala/Crypto/kdf/hmac"
-)
+## Future Improvements
 
-func main() {
-    key := []byte("secret key")
-    message := []byte("message to authenticate")
-    
-    // Generate HMAC
-    mac := hmac.HMAC_Sign(key, message)
-    fmt.Printf("HMAC: %x\n", mac)
-    
-    // Verify HMAC
-    isValid := hmac.HMAC_Verify(key, message, mac)
-    fmt.Printf("HMAC Valid: %t\n", isValid)
-    
-    // Verify with tampered message
-    tamperedMessage := []byte("tampered message")
-    isValidTampered := hmac.HMAC_Verify(key, tamperedMessage, mac)
-    fmt.Printf("Tampered HMAC Valid: %t\n", isValidTampered) // Should be false
-}
-```
-
-### Digital Signatures
-
-#### ECDSA
-
-```go
-package main
-
-import (
-    "crypto/rand"
-    "fmt"
-    
-    "github.com/SanthoshCheemala/Crypto/asymmetric/signature"
-    "github.com/glycerine/fast-elliptic-curve-p256/elliptic"
-)
-
-func main() {
-    // Generate key pair
-    privateKey, err := signature.GenerateKey(elliptic.P256(), rand.Reader)
-    if err != nil {
-        panic(err)
-    }
-    
-    // Message to sign
-    message := []byte("message to sign")
-    
-    // Sign message
-    r, s, err := signature.Sign(rand.Reader, privateKey, message)
-    if err != nil {
-        panic(err)
-    }
-    fmt.Printf("Signature (r, s): %x, %x\n", r, s)
-    
-    // Verify signature
-    valid := signature.Verify(&privateKey.PublicKey, message, r, s)
-    fmt.Printf("Signature Valid: %t\n", valid)
-    
-    // Verify with tampered message
-    tamperedMessage := []byte("tampered message")
-    validTampered := signature.Verify(&privateKey.PublicKey, tamperedMessage, r, s)
-    fmt.Printf("Tampered Signature Valid: %t\n", validTampered) // Should be false
-}
-```
-
-### Key Exchange
-
-#### Curve25519 ECDH
-
-```go
-package main
-
-import (
-    "fmt"
-    "encoding/hex"
-    
-    "github.com/SanthoshCheemala/Crypto/asymmetric/ecdh25519"
-)
-
-func main() {
-    // Generate key pair for Alice
-    alicePrivate, err := ecdh25519.GenerateKey()
-    if err != nil {
-        panic(err)
-    }
-    alicePublic := alicePrivate.Public()
-    
-    // Generate key pair for Bob
-    bobPrivate, err := ecdh25519.GenerateKey()
-    if err != nil {
-        panic(err)
-    }
-    bobPublic := bobPrivate.Public()
-    
-    // Alice computes shared secret
-    aliceSharedSecret, err := alicePrivate.ComputeSecret(bobPublic)
-    if err != nil {
-        panic(err)
-    }
-    
-    // Bob computes shared secret
-    bobSharedSecret, err := bobPrivate.ComputeSecret(alicePublic)
-    if err != nil {
-        panic(err)
-    }
-    
-    // The shared secrets should be identical
-    fmt.Printf("Alice's shared secret: %x\n", aliceSharedSecret)
-    fmt.Printf("Bob's shared secret: %x\n", bobSharedSecret)
-    
-    // Verify they match
-    match := hex.EncodeToString(aliceSharedSecret) == hex.EncodeToString(bobSharedSecret)
-    fmt.Printf("Shared secrets match: %t\n", match) // Should be true
-}
-```
-
-## Implementation Details
-
-This library implements various cryptographic algorithms following their respective standards:
-
-- SHA-256: Follows FIPS PUB 180-4
-- AES: Implements the Advanced Encryption Standard (FIPS 197)
-- HMAC: Follows RFC 2104
-- ECDSA: Implements Elliptic Curve Digital Signature Algorithm
-- Curve25519: Implements the X25519 key exchange as specified in RFC 7748
-
-All implementations are in pure Go, making them suitable for educational purposes and understanding the underlying algorithms.
-
-## Security Note
-
-While this library aims to implement cryptographic algorithms correctly, it is primarily intended for educational purposes. For production applications, consider using Go's standard crypto packages or other well-audited cryptographic libraries.
+- Add support for additional cryptographic algorithms.
+- Develop a custom Wireshark dissector for the TLS-like protocol.
+- Enhance the chat application for broader testing scenarios.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Open an issue or submit a pull request with improvements or bug fixes.
+
+## License
+
+This project is licensed under the MIT License. See LICENSE for details.

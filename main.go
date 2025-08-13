@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/SanthoshCheemala/Crypto/protocol/TLS/client"
-	"github.com/SanthoshCheemala/Crypto/protocol/TLS/server"
+	"github.com/SanthoshCheemala/Crypto/protocol/chatapp/client"
+	"github.com/SanthoshCheemala/Crypto/protocol/chatapp/server"
 )
 
 

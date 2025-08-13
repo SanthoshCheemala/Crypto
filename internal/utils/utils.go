@@ -27,7 +27,6 @@ func GCD(i, b int) int {
 }
 
 func DumpWords(note string,in []uint32){
-	fmt.Printf("%s",note)
 	for i,v := range in{
 		if i%4 == 0{
 			fmt.Printf("\nword[%02d]: %.8x",i/4,v)
@@ -39,7 +38,6 @@ func DumpWords(note string,in []uint32){
 }
 
 func Dumpbytes(note string,in []byte){
-	fmt.Printf("%s",note)
 	for i,v := range in{
 		if i%16 == 0{
 			fmt.Printf("\nblock[%d]: %02x",i/16,v)

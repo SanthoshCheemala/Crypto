@@ -1,15 +1,15 @@
 package tls
 
-
 import (
-		"github.com/SanthoshCheemala/Crypto/hash"
+	"github.com/SanthoshCheemala/Crypto/hash"
 )
 
-func transcript(transcripts...string) ([]byte) {
+// Transcript hashes a series of handshake messages to create a unique session hash.
+func Transcript(transcripts...[]byte) ([]byte) {
 	H := hash.NewSHA256State()
 
-	for _,transcript := range transcripts {
-		H.Sha256([]byte(transcript))
+	for _,t := range transcripts {
+		H.Sha256(t)
 	}
 	return H.Sum()
 }

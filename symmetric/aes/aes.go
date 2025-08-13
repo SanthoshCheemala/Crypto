@@ -2,7 +2,6 @@ package aes
 
 import (
 	"encoding/binary"
-	"fmt"
 	"math"
 	"math/big"
 	"reflect"
@@ -102,8 +101,8 @@ func (a *AES) keyExpansion()([]uint32){
 		// and the word a.nk positions earlier
 		w = append(w, w[r-a.nk]^binary.BigEndian.Uint32(tmpW))
 	}
-	// mute debugging
-	utils.DumpWords("KeyExpansion: ", w);
+	// // mute debugging
+	// utils.DumpWords("KeyExpansion: ", w);
 	return w;
 }
 
@@ -117,8 +116,8 @@ func (a *AES) EncryptCBC(in []byte, iv []byte,pad utils.PaddingFunc)[]byte{
 		a.encryptBlock(in[i:i+a.len],a.roundkeys)
 		copy(ivTmp,in[i:i+a.len])
 	}
-	fmt.Printf("aes_impl-%d CBC encrypted cipher:",a.nk*32)
-	utils.Dumpbytes("",in)
+	// fmt.Printf("aes_impl-%d CBC encrypted cipher:",a.nk*32)
+	// utils.Dumpbytes("",in)
 	return in
 }
 
@@ -137,8 +136,8 @@ func (a *AES) DecryptCBC(in []byte, iv []byte,unpad utils.UnpaddingFunc)([]byte)
 		a.DecryptBlock(in[i:i+a.len],a.roundkeys)
 		copy(ivTmp,reg);
 	}
-	fmt.Printf("aes_impl-%d CBC decrypted cipher:",a.nk*32)
-	utils.Dumpbytes("",in)
+	// fmt.Printf("aes_impl-%d CBC decrypted cipher:",a.nk*32)
+	// utils.Dumpbytes("",in)
 	return in;
 }
 
@@ -212,9 +211,8 @@ func (a *AES) EncryptGCM(in []byte,iv []byte,auth []byte, tagLen int)([]byte,[]b
 	big.NewInt(int64(8 * len(cipher))).FillBytes(lenC)
 	S := gHash(append(append(append(append(append(auth,vZeros...),cipher...),uZeros...),lenA...),lenC...),H)
 	T := a.EncryptGCTR(S,J0Temp)
-	fmt.Printf("aes-impl-%d GCM Encrypted cipherText",a.nk*32)
-	utils.Dumpbytes("",cipher)
-	utils.Dumpbytes("Tag",T[:tagLen])
+	// utils.Dumpbytes("",cipher)
+	// utils.Dumpbytes("Tag",T[:tagLen])
 	return cipher,T[:tagLen]
 }
 
@@ -248,13 +246,12 @@ func (a *AES) DecryptGCM(in []byte,iv []byte, auth []byte,tag []byte)([]byte){
 	big.NewInt(int64(8 * len(plainText))).FillBytes(lenC)
 	S := gHash(append(append(append(append(append(auth,vZeros...),cipherText...),uZeros...),lenA...),lenC...),H)
 	T := a.EncryptGCTR(S,J0Temp)
-	fmt.Printf("aes-impl-%d GCM Decrypted plainText",a.nk*32)
 	if reflect.DeepEqual(T[:len(tag)],tag){
-		utils.Dumpbytes("",plainText)
+		// utils.Dumpbytes("",plainText)
 		return plainText
 	}
 
-	utils.Dumpbytes("\nFailed!",nil)
+	// utils.Dumpbytes("\nFailed!",nil)
 	return nil
 }
 

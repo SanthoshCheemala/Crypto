@@ -42,6 +42,5 @@ func HMAC_Sign(k []byte,msg []byte) []byte{
 
 func HMAC_Verify(k ,msg ,expectedMac []byte) bool {
 	computedMac := HMAC_Sign(k,msg)
-	// fmt.Println(computedMac,expectedMac)
 	return hmac.Equal(computedMac,expectedMac) // to avoid timing attacks
 }
