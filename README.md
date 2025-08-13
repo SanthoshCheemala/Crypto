@@ -52,8 +52,8 @@ This repository contains a custom cryptographic library implemented from scratch
 1. **Clone the Repository**:
 
    ```bash
-   git clone https://github.com/yourusername/your-repo.git
-   cd your-repo
+   git clone https://github.com/SanthoshCheemala/Crypto.git
+   cd Crypto
    ```
 2. **Install Dependencies**:
 
@@ -79,7 +79,7 @@ Below is a screenshot of the client-server communication, showing the handshake,
 
 ![Terminal Chat Output](./images/terminal_chat.png)## Verifying Correctness and Soundness with Wireshark
 
-This project includes a Wireshark packet capture (`demo/chat_traffic.pcap`) to demonstrate the cryptographic algorithms' correctness (accurate data transmission) and soundness (security against unauthorized access).
+This project includes a Wireshark packet capture (`pcap/chat_traffic.pcap`) to demonstrate the cryptographic algorithms' correctness (accurate data transmission) and soundness (security against unauthorized access).
 
 ### Steps to Analyze
 
@@ -131,14 +131,13 @@ For a detailed walkthrough of the project, including the chat application and Wi
 
 ## Security Notes
 
-- The `demo/decryption_keys.txt` is for demonstration only and should not be used in production.
+- This is for demonstration only and should not be used in production.
 - Ensure secure key management in real-world applications to prevent exposure.
 
-## Future Improvements
+## TODO
 
-- Add support for additional cryptographic algorithms.
-- Develop a custom Wireshark dissector for the TLS-like protocol.
-- Enhance the chat application for broader testing scenarios.
+- Planning to Implement RNG & PRNG(Pseudo Random Generater) Functions
+- Planning to Implement bilinear Pairing and Signatures using special type of Elliptic Curves(BLS12–381)
 
 ## Contributing
 
