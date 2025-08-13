@@ -77,7 +77,7 @@ This repository contains a custom cryptographic library implemented from scratch
 
 Below is a screenshot of the client-server communication, showing the handshake, secure channel establishment, and encrypted message exchange.
 
-![Terminal Chat Output](https://drive.google.com/file/d/1oUnwdFqZl3Nk7Fxgb9dtNeWJbOPOV5Su/view?usp=drive_link)## Verifying Correctness and Soundness with Wireshark
+![Terminal Chat Output](./images/terminal_chat.png)## Verifying Correctness and Soundness with Wireshark
 
 This project includes a Wireshark packet capture (`demo/chat_traffic.pcap`) to demonstrate the cryptographic algorithms' correctness (accurate data transmission) and soundness (security against unauthorized access).
 
@@ -102,10 +102,10 @@ This project includes a Wireshark packet capture (`demo/chat_traffic.pcap`) to d
 
 - **Communication Flow**: Displays the TCP handshake and encrypted data exchange.
 
-  ![Wireshark Communication Flow](https://drive.google.com/file/d/1WQnKjqjiwCXMGuEehoVifoYBR7LAKUyE/view?usp=drive_link)
+  ![Wireshark Communication Flow](./images/wireshark_flow.png)
 - **TCP Stream Data**: Shows encrypted payloads and (optionally) decrypted messages.
 
-  ![Wireshark TCP Stream](https://drive.google.com/file/d/1DWbUlX2ylzn5-5OAGzz_UyqaEYZ4r15u/view?usp=drive_link)
+  ![Wireshark TCP Stream](./images/wireshark_tcp_stream.png)
 
 ## Demonstration Video
 
